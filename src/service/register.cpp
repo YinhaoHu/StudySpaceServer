@@ -11,6 +11,7 @@
 ---------------------------------------------------------------------
 */
 #include"register.hpp"
+#include"userdata.hpp"
 
 #include"../server/net.hpp"
 #include"../server/standard.hpp"
@@ -29,6 +30,7 @@
 using namespace std;
 using namespace ceh::Data;
 using namespace ceh::String;
+using namespace serverData;
 
 const char* registerFile = "data/users.hdat";
 const char* codeFile = "data/code.hdat";
@@ -60,7 +62,8 @@ void doRegister(serviceInfo* info)
     codeData.load();
 
     parseInfo(info, &registerinfo);
-    status = checkInfo(&registerinfo, &userinfoData, &codeData);
+    status = checkInfo(&registerinfo, &userinfoData, &codeData);//BUg
+    
     switch(status)
     {    
         case 0: 
@@ -72,11 +75,14 @@ void doRegister(serviceInfo* info)
         case 3: wcpcpy(sendBuf, L"CODE");break;
         default: wcpcpy(sendBuf,L"UNKNOWN");
     }
+    
     memcpy(sendMsg, sendBuf,maxSockBufferBytes);
     send(info->userfd, sendMsg, maxSockBufferBytes, 0);
     showMinior(L"SEND",sendBuf);
+
     wchar_t* end;
     generateUserData(wcstol(registerinfo.allocatedId, &end, 10));
+
     userinfoData.save();
     codeData.save();
 }
@@ -129,6 +135,8 @@ static int checkInfo(RegisterInfo* info, HWData* userdata, HWData* codedata)
 
 static inline void generateUserData(int id)
 {
+    if(id == 0)
+        return;
     char defaultProfile_filename[maxFileSize], userProfile_filename[maxFieldSize];
     char useridstr[16], *profile_buffer;
     FILE* defaultProfile_file, *userProfile_file;
@@ -140,6 +148,7 @@ static inline void generateUserData(int id)
     strcpy(userProfile_filename, standard::userProfileDir);
     strcat(userProfile_filename, useridstr);
 
+    
     defaultProfile_file = fopen(defaultProfile_filename, "rb");
     userProfile_file = fopen(userProfile_filename, "wb");
 
@@ -148,6 +157,10 @@ static inline void generateUserData(int id)
     fread(profile_buffer, sizeof(char), profile_sbuf.st_size, defaultProfile_file);
     fwrite(profile_buffer, sizeof(char), profile_sbuf.st_size, userProfile_file);
 
+    shared_ptr<wstring> intro = make_shared<wstring>(wstring(L"StudySpace 用户"));
+    add_userIntro(id, intro);
+    init_userfriend(id);
+    
     fclose(userProfile_file);
     fclose(defaultProfile_file);
     delete profile_buffer;

@@ -3,6 +3,7 @@
 #include"../server/standard.hpp"
 #include"../../lib/HData/HData.hpp"
 #include"../../lib/HString/HString.hpp"
+#include"../../include/extern_onlineuser.hpp"
 #include"../server/net.hpp"
 
 #include<sys/socket.h>
@@ -19,15 +20,12 @@ using namespace std;
 using namespace ceh::Data;
 using namespace ceh::String;
 
-extern unordered_map<userID_t, userFD_t> onlineUsers;
-extern mutex onlineUsersMutexLock;
-
 void doComChatSend(serviceInfo* info)
 {
     const int filesize_bufsize = 16, id_bufsize = 16;
     wchar_t *username, *msg,*eventType;
     char profile_filesize[filesize_bufsize], userid[id_bufsize], *profile_file;
-    char userprofile_filename[maxFieldSize], *end;
+    char userprofile_filename[maxFieldSize];
     struct stat profile_sbuf;
     HWData usersDataFile(standard::userDataFile);
 
@@ -58,7 +56,7 @@ void doComChatSend(serviceInfo* info)
 
     eventType = new wchar_t[maxSockBufferSize];
     wcscpy(eventType, L"COMCHATRECV");
-    for(auto& user : onlineUsers)
+    for(auto& user : *onlineUsers)
     {
         if(user.first != info->userid)
         {

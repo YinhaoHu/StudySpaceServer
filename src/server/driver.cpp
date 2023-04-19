@@ -1,6 +1,8 @@
 //driver.cpp -- The driver of the server.
+#define _SERVER_DRIVER
 
 #include"../../lib/HData/HData.hpp"
+#include"../../include/extern_onlineuser.hpp"
 
 #ifndef HDATA_FOR_SERVER_LOCAL_en_USUTF8
 #error "[lib]Make sure the ustf8 local set in HData & HWData construtor is en_utf8."
@@ -10,6 +12,8 @@
 #include"guard.hpp"
 #include"net.hpp"
 #include"standard.hpp"
+
+#include"../../lib/HThreadPool/HThreadPool.hpp"
 
 #include<mutex>
 #include<string>
@@ -25,9 +29,11 @@
 #include<cstring>
 
 using namespace std;
+using namespace ceh::Concurrency;
 
 unsigned long long eventCount = 1;
-void* serviceThread(void* argv);
+
+static void initGlobalData();
 
 int main(int argc, char* argv[])
 {
@@ -36,7 +42,7 @@ int main(int argc, char* argv[])
     const char* vertifacation = "LIK";
     sockaddr_storage clientaddr;
     socklen_t clientaddrlen;
-    pthread_t tid;
+    HThreadPool threadPool(64);//Change the slots according to the needs.
 
     if(argc != 2)
     {
@@ -45,9 +51,11 @@ int main(int argc, char* argv[])
     }
 
     if((listenfd = openListenfd(argv[1]) )< 0)
-        errorExit(L"[Error] main(): openListenfd");
+        guard::errorExit(L"[Error] main(): openListenfd");
 
-    while(1)
+    initGlobalData();
+
+    while(true)
     {
         clientaddrlen = sizeof(sockaddr_storage);
         connfd = accept(listenfd, (sockaddr*)& clientaddr, &clientaddrlen);
@@ -55,22 +63,26 @@ int main(int argc, char* argv[])
                                 clientport, maxFieldSize, 0);
         wprintf(L"[Connection: %lld] Connected to (%s : %s)\n", 
             eventCount,clienthost, clientport);
-        send(connfd, vertifacation,4,0);
         ++eventCount;
 
-        int* workfd = new int(connfd);
-        pthread_create(&tid, NULL, serviceThread, static_cast<void*>(workfd));
+        send(connfd, vertifacation,4,0);
+        //Inform the client that it is ok to connect with the server.
+
+        threadPool.addTask(
+            [](int socketfd)
+            {
+                serve(socketfd);
+                close(socketfd);
+            }, 
+            connfd);
     }    
     return 0;
 }
-void* serviceThread(void* argv)
+
+static void initGlobalData()
 {
-    int connfd = *static_cast<int*>(argv);
-
-    delete static_cast<int*>(argv);
-    pthread_detach(pthread_self());
-    serve(connfd);
-    close(connfd);
-
-    return NULL;
+    userOfflineWaitingTasks = new std::unordered_map<userID_t, std::queue<std::shared_ptr<::wstring>>>;
+    userOfflineWaitingTasks_MutexLock = new mutex;
+    onlineUsers = new unordered_map<userID_t, userFD_t>;
+    onlineUsersMutexLock = new mutex;
 }

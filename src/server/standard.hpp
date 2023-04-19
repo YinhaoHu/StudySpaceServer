@@ -13,6 +13,8 @@ namespace standard{
     inline const char* userProfileDir = "data/userprofile/";
     inline const char* dataFileDir = "data/";
     inline const char* userDataFile = "data/users.hdat";
+    inline const char* userIntroDir = "data/userintro/";
+    inline const char* userFriendsListFile = "data/userfriends.hdat";
 
     inline const int userid_begin = 10001;
 

@@ -3,15 +3,15 @@
 using namespace ceh::Data;
 using namespace std;
 
-HData::HData(const char* filename, int _delimiter)
+HData::HData(const char* _filename, int _delimiter)
+	:filename(_filename)
 {
-	fileObject.open(filename, ios_base::out | ios_base::in);
-	fileObject.imbue(std::locale("en_US.UTF-8"));
+	in_fileObject.open(filename);
+	in_fileObject.imbue(std::locale("en_US.UTF-8"));
 	delimiter = _delimiter;
 }
 HData::~HData()
 {
-	fileObject.close();
 }
 
 HDataItem& HData::operator[](size_t idx)
@@ -25,27 +25,30 @@ void HData::load()
 	HDataItem item;
 
 	dataBuffer.clear();
-	while (getline(fileObject, lineStr).good())
+	while (getline(in_fileObject, lineStr, '\n').good())
 	{
 		item = HDataItem::fromStdString(lineStr);
 		dataBuffer.push_back(item);
 	}
-	fileObject.clear();
-	fileObject.seekp(0);
 }
+
 void HData::save()
 {
-	for (size_t i = 0; i < dataBuffer.size(); ++i)
+	in_fileObject.close();
+	size_t loop_end = dataBuffer.size();
+
+	out_fileObject.open(filename, ios::trunc | ios::out);
+
+	for (size_t i = 0; i < loop_end; ++i)
 	{
-		fileObject << HDataItem::toStdString(dataBuffer[i]) + "\n";
+		out_fileObject << HDataItem::toStdString(dataBuffer[i]) + "\n";
 	}
-	fileObject.clear();
-	fileObject.seekg(0);
+	out_fileObject.close();
 }
 
 bool HData::fail()
 {
-	return fileObject.fail();
+	return in_fileObject.fail();
 }
 size_t HData::size()
 {

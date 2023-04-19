@@ -1,7 +1,8 @@
 TARGET_EXEC := server
 
 CXX := g++
-CXXFLAGS := -Wall
+
+CXXFLAGS := -Wall -std=c++20
 
 SRC_DIR := ./src
 LIB_DIR := ./lib
@@ -13,7 +14,7 @@ SRCS := $(shell find $(LIB_DIR) $(SRC_DIR) -name '*.cpp')
 OBJS := $(SRCS:%.cpp=$(BUILD_DIR)/%.o)
 
 $(RESULT_DIR)/$(TARGET_EXEC): $(OBJS)
-	g++ $(LIB_SRCS) $(SRCS) -o $@
+	g++ $(CXXFLAGS) $(LIB_SRCS) $(SRCS) -o $@
 	
 $(BUILD_DIR)/%.o: %.cpp
 	mkdir -p $(dir $@)

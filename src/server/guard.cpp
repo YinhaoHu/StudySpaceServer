@@ -4,11 +4,14 @@
 #include<cstdlib>
 #include<cwchar>
 
-void errorMsg(const wchar_t* msg)
+using namespace std;
+
+
+void guard::errorMsg(const wchar_t* msg)
 {
     fwprintf(stderr, msg);
 }
-void errorExit(const wchar_t* msg)
+void guard::errorExit(const wchar_t* msg)
 {
     fwprintf(stderr, msg);
     exit(0);

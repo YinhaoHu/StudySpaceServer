@@ -1,16 +1,22 @@
 #include"net.hpp"
 #include"guard.hpp"
+#include"standard.hpp"
 #include"../../lib/HTime/HTime.hpp"
+#include"../../lib/HString/HString.hpp"
 
 #include<netdb.h>
 #include<sys/socket.h>
 #include<unistd.h>
-
+#include<iostream>
 #include<cwchar>
 #include<cstring>
 #include<cstdio>
 
+using namespace std;
+using namespace ceh::String;
+
 const int listenLimit = 8192;
+const size_t sizeInfoBytes = 16;
 
 int openListenfd(char* port)
 {
@@ -21,9 +27,9 @@ int openListenfd(char* port)
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_ADDRCONFIG | AI_NUMERICSERV | AI_PASSIVE;
-    if(int errNum = getaddrinfo(nullptr, port, &hints, &result))
+    if(getaddrinfo(nullptr, port, &hints, &result))
     {    
-        errorExit(L"[Error] openListenfd: getaddrinfo() - ");
+        guard::errorExit(L"[Error] openListenfd: getaddrinfo() - ");
     }
 
     for(p = result; p != nullptr; p= p->ai_next)
@@ -49,10 +55,90 @@ int openListenfd(char* port)
     return listenfd;
 }
 
+std::shared_ptr<NetFileNode> easyRecv_File(int sockfd)
+{
+    size_t fileSize;
+    char* fileSizeStr;
+    char* fileData; //It will be delete automatically.
+
+    fileSizeStr = new char[sizeInfoBytes];
+    memset(fileSizeStr, 0, sizeInfoBytes);
+    recv(sockfd, fileSizeStr, sizeInfoBytes, MSG_WAITALL);
+    fileSize = atol(fileSizeStr);
+
+    fileData = new char[fileSize];
+    recv(sockfd, fileData, fileSize, MSG_WAITALL);
+
+    delete[] fileSizeStr;
+    return make_shared<NetFileNode>(fileSize, fileData);
+}
+
+std::shared_ptr<wstring> easyRecv_WString(int sockfd)
+{
+    size_t bytes;
+    char* sizeStr;
+    wchar_t* wcstr;
+
+    sizeStr = new char[sizeInfoBytes];
+    memset(sizeStr, 0, sizeInfoBytes);
+    recv(sockfd, sizeStr, sizeInfoBytes, MSG_WAITALL);
+
+    bytes = atol(sizeStr);
+    wcstr = new wchar_t[bytes / sizeof(wchar_t)];
+    memset(wcstr, 0, bytes);
+    recv(sockfd, wcstr, bytes, MSG_WAITALL);
+
+    auto res = make_shared<wstring>(wcstr);
+    res->resize(bytes / sizeof(wchar_t));
+    delete[] sizeStr;
+    delete[] wcstr;
+    return res;
+}
+
+void easySend_WString(int sockfd, std::shared_ptr<wstring> string)
+{
+    char* sizeStr = new char[sizeInfoBytes];
+    size_t bytes = string->length() * sizeof(wchar_t);
+    wchar_t* wcstr = new wchar_t[bytes / sizeof(wchar_t)];
+
+    memset(sizeStr, 0, sizeInfoBytes);
+    uintToStr(bytes, sizeStr);
+
+    memset(wcstr, 0, bytes);
+    memcpy(wcstr, string->c_str(), bytes);
+    send(sockfd, sizeStr, sizeInfoBytes, 0);
+    send(sockfd, wcstr, bytes, 0);
+
+    delete[] wcstr;
+    delete[] sizeStr;
+}
+
+void easySend_File(int sockfd, std::shared_ptr<char> fileData, size_t fileSize)
+{
+    char* sizeStr = new char[sizeInfoBytes];
+
+    memset(sizeStr, 0, sizeInfoBytes);
+    uintToStr(fileSize, sizeStr);
+
+    send(sockfd, sizeStr, sizeInfoBytes, 0);
+    send(sockfd, fileData.get(), fileSize,0);
+}
+
+void easySendMsg(int sockfd, std::shared_ptr<wstring> string)
+{
+    wchar_t* wcstr = new wchar_t[maxSockBufferSize];
+    memset(wcstr,0,maxSockBufferBytes);
+    memcpy(wcstr, string->c_str(), string->length() * sizeof(wchar_t));
+    send(sockfd, string->c_str(), maxSockBufferBytes, 0);
+    delete wcstr;
+}
+
 void showMinior(const wchar_t* type,const wchar_t* msg)
 {
     ceh::Time::HTime htime;
 
-    wprintf(L"\t[TIME %2d:%2d:%2d] %ls\n\t\t\t%ls\n", htime.getHourByInt()+8, htime.getMinByInt(),
+    wprintf(L"\t[TIME %2d:%2d:%2d] %ls\n\t\t\t%ls\n", 
+            htime.getHourByInt()+8, htime.getMinByInt(),
                         htime.getSecByInt(),type,msg);
 }
+

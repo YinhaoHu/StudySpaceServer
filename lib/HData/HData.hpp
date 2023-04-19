@@ -6,6 +6,7 @@
 //  Note: More information is written in the README.md
 
 //These macros are needed for server version!!!
+#define HDATA_FOR_SERVER_LOCAL_UTF8
 #define HDATA_FOR_SERVER_LOCAL_en_USUTF8
 
 #include<algorithm>
@@ -199,8 +200,10 @@ public:
 	void append(ceh::Data::HDataItem& newItem);
 	void append(ceh::Data::HDataItem&& newItem);
 private:
+	std::string filename;
 	int delimiter;
-	std::fstream fileObject;
+	std::ifstream in_fileObject;
+	std::ofstream out_fileObject;
 	std::vector<HDataItem> dataBuffer;
 };
 
@@ -231,9 +234,12 @@ public:
 	bool remove(size_t idx);
 	void append(ceh::Data::HWDataItem& newItem);
 	void append(ceh::Data::HWDataItem&& newItem);
+
 private:
+	std::wifstream in_fileObject;
+	std::wofstream out_fileObject;
+	std::string filename;
 	wchar_t delimiter;
-	std::wfstream fileObject;
 	std::vector<HWDataItem> dataBuffer;
 };
 

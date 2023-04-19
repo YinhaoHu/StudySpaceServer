@@ -24,7 +24,7 @@ void serve(int connfd)
     while(recv(connfd, buf, maxSockBufferBytes, 0) > 0)
     {
         showMinior(L"RECV",(wchar_t*)buf);
-        if(parse(buf, info) < 0)
+        if( parse(buf, info) < 0 )
         {    
             showMinior(L"RUBBISH FILTER", (wchar_t*)buf);
             continue;
