@@ -2,6 +2,7 @@
 #include"standard.hpp"
 #include"../server/net.hpp"
 #include"../service/service.hpp"
+#include"../server/guard.hpp"
 #include"../../lib/HString/HString.hpp"
 #include<sys/socket.h>
 #include<unistd.h>
@@ -21,17 +22,17 @@ void serve(int connfd)
     serviceInfo* info = new serviceInfo;
 
     info->userfd = connfd;
-    while(recv(connfd, buf, maxSockBufferBytes, 0) > 0)
+    while(recv(connfd, buf, maxSockBufferBytes, MSG_WAITALL) > 0)
     {
-        showMinior(L"RECV",(wchar_t*)buf);
+        guard::monitor(L"RECV",(wchar_t*)buf);
         if( parse(buf, info) < 0 )
         {    
-            showMinior(L"RUBBISH FILTER", (wchar_t*)buf);
+            guard::monitor(L"RUBBISH FILTER", (wchar_t*)buf);
             continue;
         }
         servicePerform(info);
     }
-    showMinior(L"END",L"---");
+    guard::monitor(L"END",L"---");
     free(buf);
     delete info;
 }

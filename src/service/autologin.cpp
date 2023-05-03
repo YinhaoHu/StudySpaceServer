@@ -11,6 +11,7 @@ using namespace ceh::Data;
 using namespace std;
 
 extern void sendUserInit(userID_t id, int sockfd);//From login.hpp
+extern void broadcast_online_friend(serviceInfo* info);//from login.cpp
 
 void doAutoLogin(serviceInfo* info)
 {
@@ -28,5 +29,7 @@ void doAutoLogin(serviceInfo* info)
             onlineUsers->emplace(info->userid, info->userfd);
         }
     }
+    
     sendUserInit(info->userid, info->userfd);
+    broadcast_online_friend(info);
 }

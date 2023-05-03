@@ -2,8 +2,25 @@
 
 #include"../../include/extern_onlineuser.hpp"
 #include"../server/net.hpp"
+#include"../server/guard.hpp"
 
 using namespace std;
+
+/*
+            -----Mention: Usage of notice-----
+        
+        Notice is used to implemente the function that 
+        even the user is offline, he will get the msg
+        when he logins.
+
+        RULE
+            notice user, the msg is only the eventType,
+            when the user becomes online, the client send
+            the request to get the messages and do the 
+            corresponding actions like send to server to 
+            get some data or show something locally.
+*/
+
 
 void noticeUser(userID_t id,std::shared_ptr<std::wstring> msg)
 {
@@ -24,7 +41,7 @@ void noticeUser(userID_t id,std::shared_ptr<std::wstring> msg)
             unique_lock lock(*onlineUsersMutexLock);
             easySendMsg(onlineUsers->at(id), make_shared<wstring>(L"NOTICE"));
             easySend_WString(onlineUsers->at(id), msg);
-            showMinior(L"Finish", L"Noticed  user one message.");
+            guard::monitor(L"Finish", L"Noticed  user one message.");
         }
     }
     else//off line

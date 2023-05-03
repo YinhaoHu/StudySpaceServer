@@ -68,7 +68,7 @@ std::shared_ptr<NetFileNode> easyRecv_File(int sockfd)
 
     fileData = new char[fileSize];
     recv(sockfd, fileData, fileSize, MSG_WAITALL);
-
+    guard::monitor(L"Track -> easyRecv_WString",to_wstring(fileSize).c_str());
     delete[] fileSizeStr;
     return make_shared<NetFileNode>(fileSize, fileData);
 }
@@ -90,6 +90,9 @@ std::shared_ptr<wstring> easyRecv_WString(int sockfd)
 
     auto res = make_shared<wstring>(wcstr);
     res->resize(bytes / sizeof(wchar_t));
+
+    guard::monitor(L"Track -> easyRecv_WString",res->c_str());
+
     delete[] sizeStr;
     delete[] wcstr;
     return res;
@@ -108,7 +111,7 @@ void easySend_WString(int sockfd, std::shared_ptr<wstring> string)
     memcpy(wcstr, string->c_str(), bytes);
     send(sockfd, sizeStr, sizeInfoBytes, 0);
     send(sockfd, wcstr, bytes, 0);
-
+    guard::monitor(L"Track -> easySend_Wstring", string->c_str());
     delete[] wcstr;
     delete[] sizeStr;
 }
@@ -122,6 +125,7 @@ void easySend_File(int sockfd, std::shared_ptr<char> fileData, size_t fileSize)
 
     send(sockfd, sizeStr, sizeInfoBytes, 0);
     send(sockfd, fileData.get(), fileSize,0);
+    guard::monitor(L"Track -> easySend_File", to_wstring(fileSize).c_str());
 }
 
 void easySendMsg(int sockfd, std::shared_ptr<wstring> string)
@@ -130,15 +134,6 @@ void easySendMsg(int sockfd, std::shared_ptr<wstring> string)
     memset(wcstr,0,maxSockBufferBytes);
     memcpy(wcstr, string->c_str(), string->length() * sizeof(wchar_t));
     send(sockfd, string->c_str(), maxSockBufferBytes, 0);
+    guard::monitor(L"Track -> easySend_Msg", string->c_str());
     delete wcstr;
 }
-
-void showMinior(const wchar_t* type,const wchar_t* msg)
-{
-    ceh::Time::HTime htime;
-
-    wprintf(L"\t[TIME %2d:%2d:%2d] %ls\n\t\t\t%ls\n", 
-            htime.getHourByInt()+8, htime.getMinByInt(),
-                        htime.getSecByInt(),type,msg);
-}
-

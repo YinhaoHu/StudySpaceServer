@@ -22,89 +22,54 @@
 #include"sendfriendslist.hpp"
 #include"friend.hpp"
 #include"notice.hpp"
+#include"chat.hpp"
+#include"feedback.hpp"
+#include"userquit.hpp"
 
+#include"../server/guard.hpp"
 #include"../server/net.hpp"
 #include"../../include/extern_onlineuser.hpp"
 
 #include<queue>
+#include<vector>
+#include<utility>
 #include<functional>
 #include<unordered_map>
 #include<mutex>
 
 #include<cstring>
+
 using namespace std;
+using namespace guard;
 
+vector<pair<wstring, function<void(serviceInfo* info)>>> serviceProgs{
+    {L"REGISTER", doRegister},
+    {L"LOGIN", doLogin},
+    {L"COMCHATSEND" , doComChatSend},
+    {L"USERQUIT" , doUserQuit},
+    {L"AUTOLOGIN" , doAutoLogin},
+    {L"USERINFO_CHANGE_GET_OLDPASSWORD" , do_userinfo_change_getOldPassword},
+    {L"CHANGEUSERINFO" , do_changeUserInfo},
+    {L"GETFRIENDSLIST" , doSendFriendsList},
+    {L"ADDFRIEND_REQUEST", doAddFriendRequest},
+    {L"ADDFRIEND_CONFIRM" , doAddFriendResponse},
+    {L"GET_NEW_FRIEND_INFO" ,doGetNewFriendInfo },
+    {L"GET_NOTIFICATION", doGetNotification},
+    {L"REQUEST_REMOVE_FRIEND" , doRemovoeFriendRequest},
+    {L"PRIVATE_CHAT_SEND" , do_privateChatSend},
+    {L"PRIVATE_CHAT_RECV" , do_privateChatRecv},
+    {L"FEEDBACK" , doGetFeedBack}
+};
 
-static bool inline matchProg(const wchar_t* prog, serviceInfo* info);
 
 void servicePerform(serviceInfo* info)
 {
-    if(matchProg(L"REGISTER", info) )
-    {
-        doRegister(info);
-    }
-    else if(matchProg(L"LOGIN", info))
-    {
-        doLogin(info);
-    }
-    else if(matchProg(L"COMCHATSEND", info))
-    {
-        doComChatSend(info);
-    }
-    else if(matchProg(L"USERQUIT", info))
-    {
-        onlineUsersMutexLock->lock();
-        onlineUsers->erase(info->userid);
-        onlineUsersMutexLock->unlock();
-    }
-    else if(matchProg(L"AUTOLOGIN", info))
-    {
-        doAutoLogin(info);
-    }
-    else if(matchProg(L"USERINFO_CHANGE_GET_OLDPASSWORD",info))
-    {
-        do_userinfo_change_getOldPassword(info);
-    }
-    else if(matchProg(L"CHANGEUSERINFO", info))
-    {
-        do_changeUserInfo(info);
-    }
-    else if(matchProg(L"GETFRIENDSLIST",info))
-    {
-        doSendFriendsList(info);
-    }
-    else if(matchProg(L"ADDFRIEND_REQUEST",info))
-    {
-        doAddFriendRequest(info);
-    }
-    else if(matchProg(L"ADDFRIEND_CONFIRM",info))
-    {
-        doAddFriendResponse(info);
-    }
-    else if(matchProg(L"GET_NEW_FRIEND_INFO", info))
-    {
-        doGetNewFriendInfo(info);
-    }
-    else if(matchProg(L"GET_NOTIFICATION", info))
-    {
-        doGetNotification(info);
-    }
-    else if(matchProg(L"REQUEST_REMOVE_FRIEND", info))
-    {
-        doRemovoeFriendRequest(info);
-    }
-    else
-    {  
-        wprintf(L"UNKNOW PROG\n");
-    }
-}
+    for(const auto& prog : serviceProgs)
+        if(prog.first.compare(info->prog) == 0)
+        {    
+            monitor(L"Start Service", info->prog);
+            prog.second(info);
+        }
 
-static bool inline matchProg(const wchar_t* prog, serviceInfo* info)
-{
-    bool res = ( wcscmp(prog, info->prog) == 0);
-
-    if(res)
-        showMinior(L"Start Service", prog);
-
-    return res;
+    monitor(L"Finish Service", info->prog);
 }

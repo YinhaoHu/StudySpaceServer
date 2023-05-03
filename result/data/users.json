@@ -1,0 +1,113 @@
+[
+    {
+        "email": "henryhoo@centhoo.top",
+        "friends": [
+            "10002",
+            "10006",
+            "10004",
+            "10003"
+        ],
+        "id": 10001,
+        "intro": "This is HenryHoo",
+        "name": "胡胤淏",
+        "password": "hoo32993",
+        "reg-date": [
+            2023,
+            4,
+            21
+        ]
+    },
+    {
+        "email": "henry@centhoo.top",
+        "friends": [
+            "10003",
+            "10001",
+            "10005"
+        ],
+        "id": 10002,
+        "intro": "This is Linus Torvalds, the creator and the designer of Linux.",
+        "name": "Linus",
+        "password": "hoo32993",
+        "reg-date": [
+            2023,
+            4,
+            21
+        ]
+    },
+    {
+        "email": "bjarne@centhoo.top",
+        "friends": [
+            "10002",
+            "10001"
+        ],
+        "id": 10003,
+        "intro": "This is Bjane Stroustrup, the creator of C++.",
+        "name": "Bjarne",
+        "password": "hoo32993",
+        "reg-date": [
+            2023,
+            4,
+            22
+        ]
+    },
+    {
+        "email": "9@q.c",
+        "friends": [
+            "10005",
+            "10001"
+        ],
+        "id": 10004,
+        "intro": "I am Randal Bryant, wrote CSAPP.",
+        "name": "Randal",
+        "password": "randal123",
+        "reg-date": [
+            2023,
+            4,
+            23
+        ]
+    },
+    {
+        "email": "12471247@qq.com",
+        "friends": [
+            "10002",
+            "10004"
+        ],
+        "id": 10005,
+        "intro": "奥苏高分赛法",
+        "name": "按时发放",
+        "password": "20210805",
+        "reg-date": [
+            2023,
+            4,
+            23
+        ]
+    },
+    {
+        "email": "1876231709@qq.com",
+        "friends": [
+            "10001"
+        ],
+        "id": 10006,
+        "intro": "StudySPace user",
+        "name": "sb胡胤淏",
+        "password": "12345678",
+        "reg-date": [
+            2023,
+            4,
+            23
+        ]
+    },
+    {
+        "email": "1187829045@qq.com",
+        "friends": [],
+        "id": 10007,
+        "intro": "StudySpace 用户",
+        "name": "刘大帅",
+        "password": "20031207LLB",
+        "reg-date": [
+            2023,
+            4,
+            23
+        ]
+    }
+]

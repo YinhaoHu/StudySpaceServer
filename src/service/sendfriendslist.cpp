@@ -1,6 +1,7 @@
 #include"sendfriendslist.hpp"
 #include"userdata.hpp"
 #include"../server/net.hpp"
+#include"../server/guard.hpp"
 #include"../../lib/HString/HString.hpp"
 #include"../../include/extern_onlineuser.hpp"
 #include<algorithm>
@@ -12,7 +13,7 @@
 
 using namespace ceh::String;
 using namespace std;
-using namespace serverData;
+using namespace data::user;
 
 
 void
@@ -25,7 +26,6 @@ doSendFriendsList(serviceInfo* info)
     memset(numberStr, 0, 16);
     uintToWStr(number, numberStr);
 
-    easySendMsg(info->userfd, make_shared<wstring>(L"GETFRIENDSLIST_OK"));//SendHead
     easySend_WString(info->userfd, make_shared<wstring>(numberStr));//Send Number
     //Send loop
     {
@@ -53,6 +53,6 @@ doSendFriendsList(serviceInfo* info)
             easySend_File(info->userfd, profile->data, profile->bytes); 
         }
     }
-    showMinior(L"FINISH",L"PROG: get friend list.");
+    guard::monitor(L"FINISH",L"PROG: get friend list.");
     delete[] numberStr;
 }

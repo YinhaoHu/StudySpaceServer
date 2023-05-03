@@ -13,6 +13,8 @@ namespace guard
     void errorExit(const wchar_t* msg);
     void errorMsg(const wchar_t* msg);
 
+    void monitor(const wchar_t* msg);
+    void monitor(const wchar_t* type, const wchar_t* msg);
 }
 
 

@@ -15,6 +15,10 @@ namespace standard{
     inline const char* userDataFile = "data/users.hdat";
     inline const char* userIntroDir = "data/userintro/";
     inline const char* userFriendsListFile = "data/userfriends.hdat";
+    inline const char* feedBackDirName = "data/feedback/";
+    inline const char* userDataBase_Name = "data/users.json";
+    inline const char* defaultprofile_name = "defaultprofile";
+
 
     inline const int userid_begin = 10001;
 
@@ -25,6 +29,10 @@ namespace standard{
         inline const int  regyear = 3;
         inline const int  regmonth = 4;
         inline const int  regday = 5;
+    }
+
+    namespace filesystem{
+        inline const char* serverDataBase_Name = "data/serverdata.json";
     }
 }
 

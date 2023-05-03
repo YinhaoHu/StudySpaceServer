@@ -2,6 +2,7 @@
 #include"notice.hpp"
 #include"userdata.hpp"
 #include"../server/net.hpp"
+#include"../server/guard.hpp"
 #include"../server/standard.hpp"
 #include"../../lib/HData/HData.hpp"
 #include"../../lib/HString/HString.hpp"
@@ -20,26 +21,24 @@
 #include<cwchar>
 
 using namespace std;
-using namespace ceh::Data;
 using namespace ceh::String;
 
-const char* usersFile = "data/users.hdat";
+static auto& usersFile = standard::userDataFile;
 
-static inline int checkInfo(wchar_t* id_str, userID_t id,wchar_t* password, HWData* data);
+static inline int checkInfo(wchar_t* id_str, userID_t id,wchar_t* password);
+
+void broadcast_online_friend(serviceInfo* info);
 void sendUserInit(userID_t id, int sock);
-
 
 void doLogin(serviceInfo* info)
 {
     wchar_t password[maxFieldSize], id[maxFieldSize], sendBUf[maxSockBufferSize];
     char sendMsg[maxSockBufferBytes];
-    HWData userdata(usersFile);
     int statusCode;
 
-    userdata.load();
     uintToWStr(info->userid, id);
     wcscpy(password, info->args);
-    statusCode = checkInfo(id, info->userid,password, &userdata);
+    statusCode = checkInfo(id, info->userid,password);
     switch (statusCode)
     {
         case 1: 
@@ -55,38 +54,55 @@ void doLogin(serviceInfo* info)
     }
     memcpy(sendMsg, sendBUf,maxSockBufferBytes);
     send(info->userfd, sendMsg, maxSockBufferBytes, 0);
-    showMinior(L"SEND",sendBUf);
+    guard::monitor(L"SEND",sendBUf);
 
     if(statusCode == 1)
         sendUserInit(info->userid, info->userfd);
 
-    userdata.save();
 }
 
-static inline int checkInfo(wchar_t* id_str, userID_t id,wchar_t* password, HWData* data)
+static inline int checkInfo(wchar_t* id_str, userID_t id,wchar_t* password)
 {
     int statusCode;
   
     statusCode = 1;
-    if(-1 == data->findKey(id_str))
+    if( data::user::exist_id(id) == false)
         statusCode = 3;
-    else if(wcscmp(data->access(id-standard::userid_begin).values[standard::userDataField::password].c_str(), password))
+    else if(data::user::get_userPassword(id)->compare(password) != 0)
         statusCode = 2;
-    else if(onlineUsers->find(id) != onlineUsers->end())
+    else if(onlineUsers->contains(id))
         statusCode = 4;
     return statusCode;
 }
 
+void broadcast_online_friend(serviceInfo* info)
+{
+    {
+        unique_lock lock(*onlineUsersMutexLock);
+        auto friends = data::user::get_userFriends(info->userid);
+        for(auto fr : *friends)
+        {
+            auto fid = stoul(fr);
+            if(onlineUsers->contains(fid))
+            {
+                auto ffd = onlineUsers->at(fid);
+                easySendMsg(ffd, make_shared<wstring>(L"FRIEND_ONLINE"));
+                easySend_WString(ffd, make_shared<wstring>(info->userid_str));
+            }
+        }
+    }
+}
+
 void sendUserInit(userID_t id,int sockfd){
-    auto send0_id = serverData::get_userID(id);
-    auto send1_username = serverData::get_userName(id);
-    auto send2_userintro = serverData::get_userIntro(id);
-    auto send3_profile = serverData::get_userProfile(id);
+    auto send0_id = data::user::get_userID(id);
+    auto send1_username = data::user::get_userName(id);
+    auto send2_userintro = data::user::get_userIntro(id);
+    auto send3_profile = data::user::get_userProfile(id);
 
     easySend_WString(sockfd, send0_id);
     easySend_WString(sockfd, send1_username);
     easySend_WString(sockfd, send2_userintro);
     easySend_File(sockfd, send3_profile->data, send3_profile->bytes);
 
-    showMinior(L"FINISH ", L"SEND USERINIT()");
+    guard::monitor(L"FINISH ", L"SEND USERINIT()");
 }

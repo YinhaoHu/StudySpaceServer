@@ -7,7 +7,6 @@ HData::HData(const char* _filename, int _delimiter)
 	:filename(_filename)
 {
 	in_fileObject.open(filename);
-	in_fileObject.imbue(std::locale("en_US.UTF-8"));
 	delimiter = _delimiter;
 }
 HData::~HData()

@@ -11,16 +11,18 @@
 ---------------------------------------------------------------------
 */
 #include"register.hpp"
-#include"userdata.hpp"
 
+#include"../data/serverdata.hpp"
 #include"../server/net.hpp"
+#include"../server/guard.hpp"
 #include"../server/standard.hpp"
 #include"../../lib/HString/HString.hpp"
 #include"../../lib/HData/HData.hpp"
+#include"../data/userdata.hpp"
 
 #include<sys/socket.h>
 #include<sys/stat.h>
-
+#include<filesystem>
 #include<algorithm>
 #include<string>
 
@@ -30,10 +32,8 @@
 using namespace std;
 using namespace ceh::Data;
 using namespace ceh::String;
-using namespace serverData;
 
 const char* registerFile = "data/users.hdat";
-const char* codeFile = "data/code.hdat";
 
 struct RegisterInfo{
     wchar_t username[maxFieldSize];
@@ -47,44 +47,31 @@ struct RegisterInfo{
 };
 
 static void parseInfo(serviceInfo* info, RegisterInfo* result);
-static int checkInfo(RegisterInfo* info, HWData* userdata, HWData* codedata);
-static inline void generateUserData(int id);
+static int checkInfo(RegisterInfo* info);
+static  void generateUserData(RegisterInfo* info);
 
 void doRegister(serviceInfo* info)
 {
-    wchar_t sendBuf[maxSockBufferSize];
-    char sendMsg[maxSockBufferBytes];
+    wstring sendbuf;
     int status;
-    HWData userinfoData(registerFile), codeData(codeFile);
     RegisterInfo registerinfo;
 
-    userinfoData.load();
-    codeData.load();
-
     parseInfo(info, &registerinfo);
-    status = checkInfo(&registerinfo, &userinfoData, &codeData);//BUg
+    status = checkInfo(&registerinfo);
     
     switch(status)
     {    
         case 0: 
-            wcscpy(sendBuf, L"OK ");
-            wcscat(sendBuf,registerinfo.allocatedId);
+            sendbuf.append(L"OK ") ;
+            sendbuf.append(registerinfo.allocatedId);
             break;
-        case 1: wcpcpy(sendBuf, L"EMAIL");break;
-        case 2: wcpcpy(sendBuf, L"NAME");break;
-        case 3: wcpcpy(sendBuf, L"CODE");break;
-        default: wcpcpy(sendBuf,L"UNKNOWN");
+        case 1: sendbuf = L"EMAIL";break;
+        case 2: sendbuf = L"NAME";break;
+        case 3: sendbuf = L"CODE";break;
+        default: sendbuf = L"UNKNOWN";
     }
-    
-    memcpy(sendMsg, sendBuf,maxSockBufferBytes);
-    send(info->userfd, sendMsg, maxSockBufferBytes, 0);
-    showMinior(L"SEND",sendBuf);
-
-    wchar_t* end;
-    generateUserData(wcstol(registerinfo.allocatedId, &end, 10));
-
-    userinfoData.save();
-    codeData.save();
+    generateUserData(&registerinfo);
+    easySend_WString(info->userfd, make_shared<wstring>(sendbuf));
 }
 
 static void parseInfo(serviceInfo* info, RegisterInfo* result)
@@ -115,53 +102,38 @@ static void parseInfo(serviceInfo* info, RegisterInfo* result)
     wcscpy(result->month , fifth+1);
     wcscpy(result->day, sixth+1);
 }
-static int checkInfo(RegisterInfo* info, HWData* userdata, HWData* codedata)
-{
-    HWDataItem newUser;
 
-    if(-1 != userdata->findValue(info->email, 2))
+static int checkInfo(RegisterInfo* info)
+{
+    if(data::user::exist_email(make_shared<wstring>(info->email)))
         return 1;
-    else if(-1 != userdata->findValue(info->username,0))
+    else if(data::user::exist_name(make_shared<wstring>(info->username)))
         return 2;
-    else if(-1 == codedata->findKey(info->code))
+    else if(data::server::get_registerCode()->compare(info->code) != 0)
         return 3;
     
-    uintToWStr(10001+ userdata->size(), info->allocatedId);
-    newUser.key = info->allocatedId;
-    newUser.values = {info->username, info->password, info->email, info->year, info->month, info->day};
-    userdata->append(newUser);
+    auto  newID= data::user::get_userNumber() + standard::userid_begin;
+    memset(info->allocatedId, 0, sizeof(info->allocatedId));
+    memcpy(info->allocatedId, to_wstring(newID).c_str(), 
+        to_wstring(newID).length() * sizeof(wchar_t));
+
     return 0;
 }
 
-static inline void generateUserData(int id)
+static  void generateUserData(RegisterInfo* info)
 {
-    if(id == 0)
-        return;
-    char defaultProfile_filename[maxFileSize], userProfile_filename[maxFieldSize];
-    char useridstr[16], *profile_buffer;
-    FILE* defaultProfile_file, *userProfile_file;
-    struct stat profile_sbuf;
+    auto idnum = stoul(info->allocatedId);
+    data::user::init_userdata(idnum,
+            make_shared<wstring>(info->username), 
+            make_shared<wstring>(info->password),
+            make_shared<wstring>(info->email));
 
-    uintToStr(id, useridstr);
-    strcpy(defaultProfile_filename, standard::dataFileDir);
-    strcat(defaultProfile_filename, "defaultprofile");
-    strcpy(userProfile_filename, standard::userProfileDir);
-    strcat(userProfile_filename, useridstr);
+    string from = standard::dataFileDir;
+    from.append(standard::defaultprofile_name);
 
-    
-    defaultProfile_file = fopen(defaultProfile_filename, "rb");
-    userProfile_file = fopen(userProfile_filename, "wb");
+    string to = standard::userProfileDir;
+    to.append(to_string(idnum));
 
-    stat(defaultProfile_filename, &profile_sbuf);
-    profile_buffer = new char[profile_sbuf.st_size];
-    fread(profile_buffer, sizeof(char), profile_sbuf.st_size, defaultProfile_file);
-    fwrite(profile_buffer, sizeof(char), profile_sbuf.st_size, userProfile_file);
-
-    shared_ptr<wstring> intro = make_shared<wstring>(wstring(L"StudySpace 用户"));
-    add_userIntro(id, intro);
-    init_userfriend(id);
-    
-    fclose(userProfile_file);
-    fclose(defaultProfile_file);
-    delete profile_buffer;
+    filesystem::copy_file(from, to);
+    guard::monitor(L"Generate User Data", info->allocatedId);
 }

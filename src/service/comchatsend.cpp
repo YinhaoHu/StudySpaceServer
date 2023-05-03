@@ -2,6 +2,7 @@
 
 #include"../server/standard.hpp"
 #include"../../lib/HData/HData.hpp"
+#include"../server/guard.hpp"
 #include"../../lib/HString/HString.hpp"
 #include"../../include/extern_onlineuser.hpp"
 #include"../server/net.hpp"
@@ -70,7 +71,7 @@ void doComChatSend(serviceInfo* info)
     }
     fclose(userProfileFile);
     
-    showMinior(L"FINISH", L"COMCHATSEND");
+    guard::monitor(L"FINISH", L"COMCHATSEND");
 
     delete[] eventType;
     delete[] username;

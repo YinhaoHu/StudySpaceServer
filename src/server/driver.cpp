@@ -14,7 +14,7 @@
 #include"standard.hpp"
 
 #include"../../lib/HThreadPool/HThreadPool.hpp"
-
+#include"monitor.hpp"
 #include<mutex>
 #include<string>
 
@@ -42,11 +42,11 @@ int main(int argc, char* argv[])
     const char* vertifacation = "LIK";
     sockaddr_storage clientaddr;
     socklen_t clientaddrlen;
-    HThreadPool threadPool(64);//Change the slots according to the needs.
+    HThreadPool threadPool(8);//Change the slots according to the needs.
 
     if(argc != 2)
     {
-        fwprintf(stderr, L"Usage: %s <port>", argv[0]);
+        guard::errorMsg(L"Usage :./server <port> ");
         exit(0);
     }
 
@@ -54,6 +54,8 @@ int main(int argc, char* argv[])
         guard::errorExit(L"[Error] main(): openListenfd");
 
     initGlobalData();
+    std::thread T(monitor_entry);
+    T.detach();
 
     while(true)
     {
@@ -61,9 +63,6 @@ int main(int argc, char* argv[])
         connfd = accept(listenfd, (sockaddr*)& clientaddr, &clientaddrlen);
         getnameinfo((sockaddr*)&clientaddr, clientaddrlen, clienthost, maxFieldSize, 
                                 clientport, maxFieldSize, 0);
-        wprintf(L"[Connection: %lld] Connected to (%s : %s)\n", 
-            eventCount,clienthost, clientport);
-        ++eventCount;
 
         send(connfd, vertifacation,4,0);
         //Inform the client that it is ok to connect with the server.

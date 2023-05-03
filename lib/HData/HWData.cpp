@@ -9,7 +9,6 @@ HWData::HWData(const char* _filename, wchar_t _delimiter)
 	:filename(_filename)
 {
 	in_fileObject.open(filename);
-	in_fileObject.imbue(std::locale("en_US.UTF-8"));
 	delimiter = _delimiter;
 }
 

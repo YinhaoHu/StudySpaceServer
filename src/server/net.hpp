@@ -27,7 +27,5 @@ void easySendMsg(int sockfd, std::shared_ptr<std::wstring> string);
 
 void easySend_File(int sockfd, std::shared_ptr<char> fileData, size_t fileSize);
 
-void showMinior(const wchar_t* type,const wchar_t* msg);
-
 
 #endif
