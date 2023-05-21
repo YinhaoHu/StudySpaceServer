@@ -22,6 +22,12 @@ static inline void endPrint();
 
 void monitor_entry()
 {
+    /*
+    I don't think minitor the server by adding a new thread
+    is a proper idea. This problem will be solved by an process
+    approach but not now. 
+    */
+    return; //Delete this when fix the problem above.
     string* input = new string;
 
     beginPrint("SERVER MONITOR");
