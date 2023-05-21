@@ -54,7 +54,9 @@ int main(int argc, char* argv[])
         guard::errorExit(L"[Error] main(): openListenfd");
 
     initGlobalData();
-    
+    thread minitor_thread(monitor_entry);
+    minitor_thread.detach();
+
     while(true)
     {
         clientaddrlen = sizeof(sockaddr_storage);
