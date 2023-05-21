@@ -54,9 +54,7 @@ int main(int argc, char* argv[])
         guard::errorExit(L"[Error] main(): openListenfd");
 
     initGlobalData();
-    std::thread T(monitor_entry);
-    T.detach();
-
+    
     while(true)
     {
         clientaddrlen = sizeof(sockaddr_storage);
